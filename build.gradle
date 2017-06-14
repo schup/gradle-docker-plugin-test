@@ -1,0 +1,61 @@
+import static groovy.json.JsonOutput.prettyPrint
+import static groovy.json.JsonOutput.toJson
+import de.gesellix.gradle.docker.tasks.*
+
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url 'http://dl.bintray.com/gesellix/docker-utils' }
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+}
+
+plugins {
+    id "de.gesellix.docker" version "2017-06-08T22-55-13"
+}
+
+group 'com.example.docker'
+version '1.0-SNAPSHOT'
+
+apply plugin: "de.gesellix.docker"
+
+task dockerVersion(type: DockerVersionTask, group: 'docker') {
+    doLast {
+        println prettyPrint(toJson(version))
+    }
+}
+
+task dockerInfo(type: DockerInfoTask) {
+    doLast {
+        def c = info.content
+        // println prettyPrint(toJson(info))
+        println info.headers.server
+        println "${c.Name} / Kernel=${c.KernelVersion}, OS=${c.OperatingSystem}"
+        println "Container: total=${c.Containers}, running=${c.ContainersRunning}"
+    }
+}
+
+task dockerRun(type: DockerTask) {
+    doLast {
+        String containerName = "network-example"
+        String imageName = "alpine:3.4"
+        def docker = getDockerClient()
+        def containerConfig = [
+            "Image": imageName,
+        ]
+
+        def result = docker.createContainer(containerConfig, [name: containerName])
+        logger.lifecycle("Create Container result: ${result}")
+        String containerId = result.content.Id
+
+        logger.lifecycle("Connect logs network")
+        result = docker.connectNetwork('logs', containerName)
+        // => results in > No signature of method: org.codehaus.groovy.runtime.GStringImpl.startsWith() is applicable for argument types: (java.lang.String) values: [/]
+        logger.lifecycle("connect logs network result: ${result}")
+
+        logger.lifecycle("Start Container ${containerId}")
+        result = docker.startContainer(containerId)
+        logger.lifecycle("Start Container result: ${result}")
+
+    }
+}
