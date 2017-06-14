@@ -9,13 +9,16 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
 }
-
 plugins {
     id "de.gesellix.docker" version "2017-06-08T22-55-13"
 }
 
 group 'com.example.docker'
-version '1.0-SNAPSHOT'
+
+ext {
+    demoNetwork = 'gradledemo'
+}
+
 
 apply plugin: "de.gesellix.docker"
 
@@ -35,6 +38,15 @@ task dockerInfo(type: DockerInfoTask) {
     }
 }
 
+task dockerCreateNetwork(type: DockerNetworkCreateTask) {
+    networkName = demoNetwork
+    networkConfig = [:]
+}
+
+task dockerRmNetwork(type: DockerNetworkRmTask) {
+    networkName = demoNetwork
+}
+
 task dockerRun(type: DockerTask) {
     doLast {
         String containerName = "network-example"
@@ -48,10 +60,10 @@ task dockerRun(type: DockerTask) {
         logger.lifecycle("Create Container result: ${result}")
         String containerId = result.content.Id
 
-        logger.lifecycle("Connect logs network")
-        result = docker.connectNetwork('logs', containerName)
+        logger.lifecycle("Connect to ${demoNetwork}")
+        result = docker.connectNetwork(demoNetwork, containerName)
         // => results in > No signature of method: org.codehaus.groovy.runtime.GStringImpl.startsWith() is applicable for argument types: (java.lang.String) values: [/]
-        logger.lifecycle("connect logs network result: ${result}")
+        logger.lifecycle("connect to ${demoNetwork} result: ${result}")
 
         logger.lifecycle("Start Container ${containerId}")
         result = docker.startContainer(containerId)
