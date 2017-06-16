@@ -47,6 +47,19 @@ task dockerRmNetwork(type: DockerNetworkRmTask) {
     networkName = demoNetwork
 }
 
+
+task dockerNetworks(type: DockerTask) {
+    doLast {
+        def docker = getDockerClient()
+
+        // def docker = new de.gesellix.docker.client.DockerClientImpl()
+
+        docker.networks().content.each { network ->
+            logger.lifecycle "${network.Name}"
+        }
+    }
+}
+
 task dockerRun(type: DockerTask) {
     doLast {
         String containerName = "network-example"
